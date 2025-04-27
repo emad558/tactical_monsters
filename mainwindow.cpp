@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Background image
     backgroundLabel = new QLabel(central);
-    backgroundLabel->setPixmap(QPixmap("bg.png").scaled(this->size(), Qt::KeepAspectRatioByExpanding));
+    backgroundLabel->setPixmap(QPixmap("image/bg.png").scaled(this->size(), Qt::KeepAspectRatioByExpanding));
     backgroundLabel->setScaledContents(true);
     backgroundLabel->lower();  // Push it to the back
 

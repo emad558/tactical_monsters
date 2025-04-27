@@ -6,13 +6,13 @@
 #include <QGraphicsPixmapItem>
 #include <iostream>
 #include <fstream>
-
+#include "clickabletile.h""
 
 GameBoard::GameBoard(QWidget *parent)
     : QMainWindow(parent) {
     this->setWindowTitle("Main Game Board");
 
-    this->resize(1024, 724);
+    this->resize(1480, 920);
 
     QGraphicsScene *scene = new QGraphicsScene(this);
     QGraphicsView *view = new QGraphicsView(scene, this);
@@ -21,8 +21,8 @@ GameBoard::GameBoard(QWidget *parent)
     view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    const int tileWidth = 64;
-    const int tileHeight = 54; // کمی کمتر از height واقعی شش‌ضلعی (به خاطر overlap)
+    const int tileWidth = 96;
+    const int tileHeight = 81;
     const int rows = 5;
     const int cols = 9;
     char data1[5][5];
@@ -131,11 +131,11 @@ GameBoard::GameBoard(QWidget *parent)
     // }
 
 
-    QPixmap imgEmpty("polyg.png");
-    QPixmap imgWater("water.jpg");
-    QPixmap imgRock("rock.jpg");
-    QPixmap imgP1("p1.jpg");
-    QPixmap imgP2("p2.jpg");
+    QPixmap imgEmpty("image/polyg.png");
+    QPixmap imgWater("image/water.jpg");
+    QPixmap imgRock("image/rock.jpg");
+    QPixmap imgP1("image/p1.jpg");
+    QPixmap imgP2("image/p2.jpg");
 
     for (int row = 0; row < rows; ++row) {
         for (int col = 0; col < cols; ++col) {
@@ -158,56 +158,55 @@ GameBoard::GameBoard(QWidget *parent)
                 y += tileHeight / 2;
 
                 if(data2[row][col/2] == '1'){
-                    QPixmap scaled = imgP1.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgP1.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == '2'){
-                    QPixmap scaled = imgP2.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
-                    item->setPos(x, y);
+                    QPixmap scaled = imgP2.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);                    item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == '#'){
-                    QPixmap scaled = imgRock.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgRock.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == '~'){
-                    QPixmap scaled = imgWater.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgWater.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == ' '){
-                    QPixmap scaled = imgEmpty.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgEmpty.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }
                 // }
             }else{
                 if(data1[row][col/2] == '1'){
-                    QPixmap scaled = imgP1.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgP1.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == '2'){
-                    QPixmap scaled = imgP2.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgP2.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == '#'){
-                    QPixmap scaled = imgRock.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgRock.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == '~'){
-                    QPixmap scaled = imgWater.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgWater.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == ' '){
-                    QPixmap scaled = imgEmpty.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(scaled);
+                    QPixmap scaled = imgEmpty.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                    ClickableTile *item = new ClickableTile(scaled,row,col);
                     item->setPos(x, y);
                     scene->addItem(item);
                 }

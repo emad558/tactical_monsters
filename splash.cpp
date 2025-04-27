@@ -6,7 +6,7 @@ SplashScreen::SplashScreen(QWidget *parent) : QWidget(parent) {
     this->setWindowTitle("Splash Screen");
 
     imageLabel = new QLabel(this);
-    imageLabel->setPixmap(QPixmap("splash.jpg").scaled(460, 215, Qt::KeepAspectRatio));
+    imageLabel->setPixmap(QPixmap("image/splash.jpg").scaled(460, 215, Qt::KeepAspectRatio));
 
     startButton = new QPushButton("Start", this);
 
