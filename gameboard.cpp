@@ -12,10 +12,12 @@ GameBoard::GameBoard(QWidget *parent)
     : QMainWindow(parent) {
     this->setWindowTitle("Main Game Board");
 
-    this->resize(1480, 920);
+    this->resize(1180, 820);
 
     QGraphicsScene *scene = new QGraphicsScene(this);
     QGraphicsView *view = new QGraphicsView(scene, this);
+    view->setFixedSize(1180, 820);
+
     view->setRenderHint(QPainter::Antialiasing);
     view->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -216,7 +218,28 @@ GameBoard::GameBoard(QWidget *parent)
         }
     }
 
-    setCentralWidget(view);
+    QVBoxLayout *player1Units = new QVBoxLayout;
+    for (int i = 0; i < 5; ++i) {
+        QPushButton *unitButton = new QPushButton("P1 Unit " + QString::number(i + 1));
+        unitButton->setFixedSize(100, 60);
+        player1Units->addWidget(unitButton);
+    }
+
+    QVBoxLayout *player2Units = new QVBoxLayout;
+    for (int i = 0; i < 5; ++i) {
+        QPushButton *unitButton = new QPushButton("P2 Unit " + QString::number(i + 1));
+        unitButton->setFixedSize(100, 60);
+        player2Units->addWidget(unitButton);
+    }
+
+    QHBoxLayout *mainLayout = new QHBoxLayout;
+    mainLayout->addLayout(player1Units);
+    mainLayout->addWidget(view);
+    mainLayout->addLayout(player2Units);
+
+    QWidget *centralWidget = new QWidget(this);
+    centralWidget->setLayout(mainLayout);
+    this->setCentralWidget(centralWidget);
     view->setAlignment(Qt::AlignCenter);
 
 }

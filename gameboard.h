@@ -2,6 +2,10 @@
 #define GAMEBOARD_H
 
 #include <QMainWindow>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QList>
 
 class GameBoard : public QMainWindow {
     Q_OBJECT
