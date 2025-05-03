@@ -6,15 +6,41 @@
 #include <QGraphicsPixmapItem>
 #include <iostream>
 #include <fstream>
-#include "clickabletile.h""
+#include "clickabletile.h"
+void GameBoard::onTileClicked(int row, int col) {
+    qDebug() << "GameBoard received tile click at:" << row << col;
+    // QList<QGraphicsItem *> itemsAtPos = scene->items(QPointF(col * 96 * 0.75, row * 81 + (col % 2 == 1 ? 81 / 2 : 0)));
+    // if (!itemsAtPos.isEmpty()) {
+    //     qDebug() << "Tile already occupied!";
+    //     return;
+    // }
+
+    if (selectedUnit.isEmpty()) return;
+
+    QPixmap img = (currentPlayer == "P1") ? QPixmap("image/p1.jpg") : QPixmap("image/p2.jpg");
+    QPixmap scaled = img.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    ClickableTile *unitItem = new ClickableTile(scaled, row, col);
+    unitItem->setPos(col * 96 * 0.75, row * 81 + (col % 2 == 1 ? 81 / 2 : 0));
+    scene->addItem(unitItem);
+    connect(unitItem, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
+    selectedUnit.clear();
+    if (currentPlayer == "P1")
+        currentPlayer = "P2";
+    else
+        currentPlayer = "P1";
+
+}
 
 GameBoard::GameBoard(QWidget *parent)
     : QMainWindow(parent) {
+
     this->setWindowTitle("Main Game Board");
 
     this->resize(1180, 820);
 
-    QGraphicsScene *scene = new QGraphicsScene(this);
+    scene = new QGraphicsScene(this);
     QGraphicsView *view = new QGraphicsView(scene, this);
     view->setFixedSize(1180, 820);
 
@@ -162,25 +188,35 @@ GameBoard::GameBoard(QWidget *parent)
                 if(data2[row][col/2] == '1'){
                     QPixmap scaled = imgP1.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == '2'){
                     QPixmap scaled = imgP2.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);                    item->setPos(x, y);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     scene->addItem(item);
                 }else if(data2[row][col/2] == '#'){
                     QPixmap scaled = imgRock.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == '~'){
                     QPixmap scaled = imgWater.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data2[row][col/2] == ' '){
                     QPixmap scaled = imgEmpty.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }
@@ -189,26 +225,36 @@ GameBoard::GameBoard(QWidget *parent)
                 if(data1[row][col/2] == '1'){
                     QPixmap scaled = imgP1.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == '2'){
                     QPixmap scaled = imgP2.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == '#'){
                     QPixmap scaled = imgRock.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == '~'){
                     QPixmap scaled = imgWater.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }else if(data1[row][col/2] == ' '){
                     QPixmap scaled = imgEmpty.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
                     ClickableTile *item = new ClickableTile(scaled,row,col);
+                    connect(item, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
                     item->setPos(x, y);
                     scene->addItem(item);
                 }
@@ -223,6 +269,12 @@ GameBoard::GameBoard(QWidget *parent)
         QPushButton *unitButton = new QPushButton("P1 Unit " + QString::number(i + 1));
         unitButton->setFixedSize(100, 60);
         player1Units->addWidget(unitButton);
+
+        connect(unitButton, &QPushButton::clicked, this, [=]() {
+            selectedUnit = unitButton->text();
+            currentPlayer = "P1";
+            qDebug() << "Selected unit:" << selectedUnit;
+        });
     }
 
     QVBoxLayout *player2Units = new QVBoxLayout;
@@ -230,6 +282,12 @@ GameBoard::GameBoard(QWidget *parent)
         QPushButton *unitButton = new QPushButton("P2 Unit " + QString::number(i + 1));
         unitButton->setFixedSize(100, 60);
         player2Units->addWidget(unitButton);
+
+        connect(unitButton, &QPushButton::clicked, this, [=]() {
+            selectedUnit = unitButton->text();
+            currentPlayer = "P2";
+            qDebug() << "Selected unit:" << selectedUnit;
+        });
     }
 
     QHBoxLayout *mainLayout = new QHBoxLayout;
