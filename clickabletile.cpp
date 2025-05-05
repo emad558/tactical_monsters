@@ -1,16 +1,17 @@
 #include "clickabletile.h"
+#include <QGraphicsSceneMouseEvent>
 #include <QDebug>
 
-ClickableTile::ClickableTile(const QPixmap &pixmap, int row, int col)
-    : QGraphicsPixmapItem(pixmap), row(row), col(col) {
+ClickableTile::ClickableTile(const QPixmap &pixmap, int row, int col, QGraphicsItem *parent)
+    : QObject(), QGraphicsPixmapItem(pixmap, parent), row(row), col(col)
+{
     setAcceptedMouseButtons(Qt::LeftButton);
 }
 
-void ClickableTile::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    qDebug() << "Tile clicked at: (" << row << "," << col << ")";
-    emit tileClicked(row, col);
-
-    // setPixmap(QPixmap(":/images/selected_tile.png").scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-
+void ClickableTile::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        emit tileClicked(row, col);
+    }
     QGraphicsPixmapItem::mousePressEvent(event);
 }

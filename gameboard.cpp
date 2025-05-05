@@ -1,44 +1,222 @@
 #include "gameboard.h"
 #include <QLabel>
 #include <QPixmap>
-#include <QGraphicsScene>
 #include <QGraphicsView>
-#include <QGraphicsPixmapItem>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QDebug>
+#include <QTimer>
 #include <iostream>
 #include <fstream>
-#include "clickabletile.h"
-void GameBoard::onTileClicked(int row, int col) {
-    qDebug() << "GameBoard received tile click at:" << row << col;
-    // QList<QGraphicsItem *> itemsAtPos = scene->items(QPointF(col * 96 * 0.75, row * 81 + (col % 2 == 1 ? 81 / 2 : 0)));
-    // if (!itemsAtPos.isEmpty()) {
-    //     qDebug() << "Tile already occupied!";
-    //     return;
-    // }
 
-    if (selectedUnit.isEmpty()) return;
+void GameBoard::onTileClicked(int row, int col)
+{
+    QList<QGraphicsItem*> items = scene->items(QPointF(
+        col * 96 * 0.75,
+        row * 81 + (col % 2 == 1 ? 81 / 2 : 0)
+    ));
 
-    QPixmap img = (currentPlayer == "P1") ? QPixmap("image/p1.jpg") : QPixmap("image/p2.jpg");
-    QPixmap scaled = img.scaled(96, 96, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    switch(currentState) {
+        case PlacingUnit:
+            handleUnitPlacement(row, col);
+            break;
+        case SelectingUnit:
+            handleUnitSelection(items, row, col);
+            break;
+        case SelectingDestination:
+            handleUnitMovement(items, row, col);
+            break;
+    }
+}
 
-    ClickableTile *unitItem = new ClickableTile(scaled, row, col);
-    unitItem->setPos(col * 96 * 0.75, row * 81 + (col % 2 == 1 ? 81 / 2 : 0));
-    scene->addItem(unitItem);
-    connect(unitItem, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+void GameBoard::handleUnitPlacement(int row, int col)
+{
+    if (unitsOnBoard.contains(row) && unitsOnBoard[row].contains(col)) {
+        qDebug() << "Tile occupied!";
+        return;
+    }
 
-    selectedUnit.clear();
-    if (currentPlayer == "P1")
-        currentPlayer = "P2";
-    else
-        currentPlayer = "P1";
+    QPixmap unitImg(selectedUnitImagePath);
+    if (unitImg.isNull()) {
+        qWarning() << "Failed to load unit image:" << selectedUnitImagePath;
+        unitImg = QPixmap("images/default_unit.png").scaled(96, 96);
+    }
 
+    ClickableTile *unit = new ClickableTile(unitImg.scaled(96, 81), row, col);
+    unit->setPos(col * 96 * 0.75, row * 81 + (col % 2 == 1 ? 81 / 2 : 0));
+    scene->addItem(unit);
+    connect(unit, &ClickableTile::tileClicked, this, &GameBoard::onTileClicked);
+
+    unitsOnBoard[row][col] = std::make_pair(selectedUnitType, unit);
+    isUnitSelected = false;
+    currentState = SelectingUnit;
+    clearHighlights();
+    switchTurns();
+
+    qDebug() << "Placed" << selectedUnitType << "at (" << row << "," << col << ")";
+}
+
+void GameBoard::handleUnitSelection(QList<QGraphicsItem*> items, int row, int col)
+{
+    if (!items.isEmpty()) {
+        ClickableTile* item = dynamic_cast<ClickableTile*>(items.first());
+        if (item && isOwnUnit(item)) {
+            selectedUnitTile = item;
+            originalPosition = item->pos();
+            currentState = SelectingDestination;
+            highlightMovementTiles(row, col, 2);
+            qDebug() << "Selected unit at:" << row << col;
+        }
+    }
+}
+
+void GameBoard::handleUnitMovement(QList<QGraphicsItem*> items, int row, int col)
+{
+    if (items.isEmpty() && isMovementAllowed(row, col)) {
+        moveUnitTo(selectedUnitTile, row, col);
+        resetMovementState();
+        switchTurns();
+    }
+    else {
+        selectedUnitTile->setPos(originalPosition);
+        resetMovementState();
+    }
+}
+
+void GameBoard::highlightMovementTiles(int startRow, int startCol, int range)
+{
+    clearHighlights();
+
+    for (int r = -range; r <= range; r++) {
+        for (int c = -range; c <= range; c++) {
+            if (abs(r + c) <= range) {
+                int newRow = startRow + r;
+                int newCol = startCol + c;
+
+                if (isValidPosition(newRow, newCol) &&
+                    (!unitsOnBoard.contains(newRow) ||
+                    !unitsOnBoard[newRow].contains(newCol))) {
+
+                    ClickableTile* highlight = new ClickableTile(
+                        QPixmap("images/highlight.png").scaled(96, 96),
+                        newRow, newCol
+                    );
+                    highlight->setPos(newCol * 96 * 0.75,
+                                    newRow * 81 + (newCol % 2 == 1 ? 81 / 2 : 0));
+                    highlight->setZValue(-1);
+                    highlight->setIsHighlight(true);
+                    scene->addItem(highlight);
+                }
+            }
+        }
+    }
+}
+
+void GameBoard::highlightPlacementTiles()
+{
+    clearHighlights();
+
+    for (int r = 0; r < 5; r++) {
+        for (int c = 0; c < 9; c++) {
+            if (!unitsOnBoard.contains(r) || !unitsOnBoard[r].contains(c)) {
+                ClickableTile* highlight = new ClickableTile(
+                    QPixmap("images/place_highlight.png").scaled(96, 96),
+                    r, c
+                );
+                highlight->setPos(c * 96 * 0.75, r * 81 + (c % 2 == 1 ? 81 / 2 : 0));
+                highlight->setZValue(-1);
+                highlight->setIsHighlight(true);
+                scene->addItem(highlight);
+            }
+        }
+    }
+}
+
+void GameBoard::clearHighlights()
+{
+    QList<QGraphicsItem*> items = scene->items();
+    for (auto item : items) {
+        if (auto tile = dynamic_cast<ClickableTile*>(item)) {
+            if (tile->isHighlight()) {
+                scene->removeItem(tile);
+                delete tile;
+            }
+        }
+    }
+}
+
+void GameBoard::resetMovementState()
+{
+    clearHighlights();
+    currentState = SelectingUnit;
+    selectedUnitTile = nullptr;
+}
+
+void GameBoard::moveUnitTo(ClickableTile* unit, int newRow, int newCol)
+{
+    QString unitType = unitsOnBoard[unit->getRow()][unit->getCol()].first;
+    unitsOnBoard[newRow][newCol] = std::make_pair(unitType, unit);
+    unitsOnBoard[unit->getRow()].remove(unit->getCol());
+
+    unit->setPos(newCol * 96 * 0.75, newRow * 81 + (newCol % 2 == 1 ? 81 / 2 : 0));
+    unit->setRow(newRow);
+    unit->setCol(newCol);
+}
+
+bool GameBoard::isOwnUnit(ClickableTile* unit)
+{
+    auto& unitData = unitsOnBoard[unit->getRow()][unit->getCol()];
+    QString unitType = unitData.first;
+    return (currentPlayer == Player1 && unitType.startsWith("P1")) ||
+           (currentPlayer == Player2 && unitType.startsWith("P2"));
+}
+
+bool GameBoard::isValidPosition(int row, int col)
+{
+    return row >= 0 && row < 5 && col >= 0 && col < 9;
+}
+
+bool GameBoard::isMovementAllowed(int row, int col)
+{
+    for (auto item : scene->items(QPointF(
+        col * 96 * 0.75,
+        row * 81 + (col % 2 == 1 ? 81 / 2 : 0)
+             ))) {
+        if (auto tile = dynamic_cast<ClickableTile*>(item)) {
+            if (tile->isHighlight()) return true;
+        }
+    }
+    return false;
+}
+
+void GameBoard::switchTurns()
+{
+    currentPlayer = (currentPlayer == Player1) ? Player2 : Player1;
+    updateTurnIndicator();
+    qDebug() << "Turn switched to:" << currentPlayer;
+}
+
+void GameBoard::updateTurnIndicator()
+{
+    // Implement your turn indicator UI update here
 }
 
 GameBoard::GameBoard(QWidget *parent)
-    : QMainWindow(parent) {
-
+    : QMainWindow(parent), currentPlayer(Player1),
+      currentState(SelectingUnit), isUnitSelected(false),
+      selectedUnitTile(nullptr)
+{
     this->setWindowTitle("Main Game Board");
-
     this->resize(1180, 820);
+
+    // Initialize unit images
+    unitImagePaths = {
+        {"P1 Unit 1", "image/a1.jpg"},
+        {"P1 Unit 2", "image/a2.jpg"},
+        {"P2 Unit 1", "image/a3.jpg"},
+        {"P2 Unit 2", "image/a3.jpg"}
+    };
 
     scene = new QGraphicsScene(this);
     QGraphicsView *view = new QGraphicsView(scene, this);
@@ -264,29 +442,43 @@ GameBoard::GameBoard(QWidget *parent)
         }
     }
 
+
+
     QVBoxLayout *player1Units = new QVBoxLayout;
     for (int i = 0; i < 5; ++i) {
-        QPushButton *unitButton = new QPushButton("P1 Unit " + QString::number(i + 1));
+        QString unitName = "P1 Unit " + QString::number(i + 1);
+        QPushButton *unitButton = new QPushButton(unitName, this);
         unitButton->setFixedSize(100, 60);
         player1Units->addWidget(unitButton);
 
         connect(unitButton, &QPushButton::clicked, this, [=]() {
-            selectedUnit = unitButton->text();
-            currentPlayer = "P1";
-            qDebug() << "Selected unit:" << selectedUnit;
+            if (currentPlayer == Player1) {
+                selectedUnitType = unitName;
+                selectedUnitImagePath = unitImagePaths.value(unitName, "image/p1.jpg");
+                isUnitSelected = true;
+                currentState = PlacingUnit;
+                highlightPlacementTiles();
+                qDebug() << "Ready to place:" << selectedUnitType;
+            }
         });
     }
 
     QVBoxLayout *player2Units = new QVBoxLayout;
     for (int i = 0; i < 5; ++i) {
-        QPushButton *unitButton = new QPushButton("P2 Unit " + QString::number(i + 1));
+        QString unitName = "P2 Unit " + QString::number(i + 1);
+        QPushButton *unitButton = new QPushButton(unitName, this);
         unitButton->setFixedSize(100, 60);
         player2Units->addWidget(unitButton);
 
         connect(unitButton, &QPushButton::clicked, this, [=]() {
-            selectedUnit = unitButton->text();
-            currentPlayer = "P2";
-            qDebug() << "Selected unit:" << selectedUnit;
+            if (currentPlayer == Player2) {
+                selectedUnitType = unitName;
+                selectedUnitImagePath = unitImagePaths.value(unitName, "image/p2.jpg");
+                isUnitSelected = true;
+                currentState = PlacingUnit;
+                highlightPlacementTiles();
+                qDebug() << "Ready to place:" << selectedUnitType;
+            }
         });
     }
 

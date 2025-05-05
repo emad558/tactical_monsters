@@ -1,24 +1,32 @@
 #ifndef CLICKABLETILE_H
 #define CLICKABLETILE_H
 
-#include <QGraphicsPixmapItem>
-#include <QGraphicsSceneMouseEvent>
 #include <QObject>
+#include <QGraphicsPixmapItem>
 
-// ارث‌بری چندگانه از QObject و QGraphicsPixmapItem
-class ClickableTile : public QObject, public QGraphicsPixmapItem {
-    Q_OBJECT  // حتماً باید باشه برای استفاده از سیگنال‌ها
-
+class ClickableTile : public QObject, public QGraphicsPixmapItem
+{
+    Q_OBJECT
 public:
-    int row, col;
+    ClickableTile(const QPixmap &pixmap, int row, int col, QGraphicsItem *parent = nullptr);
 
-    ClickableTile(const QPixmap &pixmap, int row, int col);
+    int getRow() const { return row; }
+    int getCol() const { return col; }
+    void setRow(int newRow) { row = newRow; }
+    void setCol(int newCol) { col = newCol; }
+    bool isHighlight() const { return m_isHighlight; }
+    void setIsHighlight(bool highlight) { m_isHighlight = highlight; }
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 signals:
     void tileClicked(int row, int col);
 
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+private:
+    int row;
+    int col;
+    bool m_isHighlight = false;
 };
 
 #endif // CLICKABLETILE_H
