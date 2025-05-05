@@ -15,31 +15,48 @@ void GameBoard::onTileClicked(int row, int col)
     QList<QGraphicsItem*> items = scene->items(QPointF(
         col * 96 * 0.75,
         row * 81 + (col % 2 == 1 ? 81 / 2 : 0)
-    ));
+        ));
 
     switch(currentState) {
-        case PlacingUnit:
-            handleUnitPlacement(row, col);
-            break;
-        case SelectingUnit:
-            handleUnitSelection(items, row, col);
-            break;
-        case SelectingDestination:
+    case PlacingUnit:
+        handleUnitPlacement(row, col);
+        break;
+    case SelectingUnit:
+        handleUnitSelection(items, row, col);
+        break;
+    case SelectingDestination:
+        // فقط اگر واقعاً در حالت انتخاب مقصد هستیم حرکت را انجام بده
+        if (selectedUnitTile != nullptr) {
             handleUnitMovement(items, row, col);
-            break;
+        }
+        break;
     }
 }
 
 void GameBoard::handleUnitPlacement(int row, int col)
 {
+    int dataRow = row;
+    int dataCol = col / 2;
+    char tileData = (col % 2 == 0) ? data[dataRow*2 + 1][dataCol*2 + 1]
+                                   : data[dataRow*2 + 2][dataCol*2 + 2];
+
+    // بررسی مالکیت خانه
+    bool isOwned = (currentPlayer == Player1 && tileData == '1') ||
+                   (currentPlayer == Player2 && tileData == '2');
+
+    if (!isOwned) {
+        qDebug() << "فقط می‌توانید روی خانه‌های خودتان سرباز قرار دهید!";
+        return;
+    }
+
+
     if (unitsOnBoard.contains(row) && unitsOnBoard[row].contains(col)) {
-        qDebug() << "Tile occupied!";
+        qDebug() << "خانه قبلاً occupied است!";
         return;
     }
 
     QPixmap unitImg(selectedUnitImagePath);
     if (unitImg.isNull()) {
-        qWarning() << "Failed to load unit image:" << selectedUnitImagePath;
         unitImg = QPixmap("images/default_unit.png").scaled(96, 96);
     }
 
@@ -53,8 +70,36 @@ void GameBoard::handleUnitPlacement(int row, int col)
     currentState = SelectingUnit;
     clearHighlights();
     switchTurns();
+}
 
-    qDebug() << "Placed" << selectedUnitType << "at (" << row << "," << col << ")";
+void GameBoard::highlightPlacementTiles()
+{
+    clearHighlights();
+
+    for (int r = 0; r < 5; r++) {
+        for (int c = 0; c < 9; c++) {
+            // تبدیل موقعیت به اندیس‌های data
+            int dataRow = r;
+            int dataCol = c / 2;
+            char tileData = (c % 2 == 0) ? data[dataRow*2 + 1][dataCol*2 + 1]
+                                         : data[dataRow*2 + 2][dataCol*2 + 2];
+
+            // بررسی مالکیت
+            bool isOwned = (currentPlayer == Player1 && tileData == '1') ||
+                           (currentPlayer == Player2 && tileData == '2');
+
+            if (isOwned && (!unitsOnBoard.contains(r) || !unitsOnBoard[r].contains(c))) {
+                ClickableTile* highlight = new ClickableTile(
+                    QPixmap("image/place_highlight.jpg").scaled(96, 96),
+                    r, c
+                    );
+                highlight->setPos(c * 96 * 0.75, r * 81 + (c % 2 == 1 ? 81 / 2 : 0));
+                highlight->setZValue(-1);
+                highlight->setIsHighlight(true);
+                scene->addItem(highlight);
+            }
+        }
+    }
 }
 
 void GameBoard::handleUnitSelection(QList<QGraphicsItem*> items, int row, int col)
@@ -67,21 +112,47 @@ void GameBoard::handleUnitSelection(QList<QGraphicsItem*> items, int row, int co
             currentState = SelectingDestination;
             highlightMovementTiles(row, col, 2);
             qDebug() << "Selected unit at:" << row << col;
+
+            // اضافه کردن این خط برای جلوگیری از حرکت فوری
+            return; // این return جدید اضافه شده
         }
+    }
+
+    // بقیه کد برای حالتی که می‌خواهید واحد جدید قرار دهید
+    if (isUnitSelected && currentState == PlacingUnit) {
+        handleUnitPlacement(row, col);
     }
 }
 
 void GameBoard::handleUnitMovement(QList<QGraphicsItem*> items, int row, int col)
 {
-    if (items.isEmpty() && isMovementAllowed(row, col)) {
-        moveUnitTo(selectedUnitTile, row, col);
-        resetMovementState();
-        switchTurns();
+    if (selectedUnitTile == nullptr) {
+        qDebug() << "No unit selected for movement!";
+        return;
     }
-    else {
-        selectedUnitTile->setPos(originalPosition);
-        resetMovementState();
+
+    bool isHighlighted = false;
+    QPointF targetPos(col * 96 * 0.75, row * 81 + (col % 2 == 1 ? 81 / 2 : 0));
+
+    for (auto item : scene->items(targetPos)) {
+        if (auto tile = dynamic_cast<ClickableTile*>(item)) {
+            if (tile->isHighlight()) {
+                isHighlighted = true;
+                break;
+            }
+        }
     }
+
+    if (!isHighlighted) {
+        qDebug() << "حرکت به این خانه مجاز نیست!";
+        return;
+    }
+
+    // انجام حرکت
+    moveUnitTo(selectedUnitTile, row, col);
+    resetMovementState();
+    switchTurns();
+    qDebug() << "سرباز به موقعیت (" << row << "," << col << ") منتقل شد";
 }
 
 void GameBoard::highlightMovementTiles(int startRow, int startCol, int range)
@@ -90,44 +161,28 @@ void GameBoard::highlightMovementTiles(int startRow, int startCol, int range)
 
     for (int r = -range; r <= range; r++) {
         for (int c = -range; c <= range; c++) {
-            if (abs(r + c) <= range) {
+            if (abs(r + c) <= range) { // الگوی حرکت شش‌ضلعی
                 int newRow = startRow + r;
                 int newCol = startCol + c;
 
                 if (isValidPosition(newRow, newCol) &&
-                    (!unitsOnBoard.contains(newRow) ||
-                    !unitsOnBoard[newRow].contains(newCol))) {
+                    (!unitsOnBoard.contains(newRow) || !unitsOnBoard[newRow].contains(newCol))) {
+
+
+                    // محاسبه موقعیت دقیق برای هایلایت
+                    qreal x = newCol * 96 * 0.75;
+                    qreal y = newRow * 81;
+                    if (newCol % 2 == 1) y += 81 / 2;
 
                     ClickableTile* highlight = new ClickableTile(
-                        QPixmap("images/highlight.png").scaled(96, 96),
+                        QPixmap("image/highlight.jpg").scaled(96, 96),
                         newRow, newCol
-                    );
-                    highlight->setPos(newCol * 96 * 0.75,
-                                    newRow * 81 + (newCol % 2 == 1 ? 81 / 2 : 0));
+                        );
+                    highlight->setPos(x, y);
                     highlight->setZValue(-1);
                     highlight->setIsHighlight(true);
                     scene->addItem(highlight);
                 }
-            }
-        }
-    }
-}
-
-void GameBoard::highlightPlacementTiles()
-{
-    clearHighlights();
-
-    for (int r = 0; r < 5; r++) {
-        for (int c = 0; c < 9; c++) {
-            if (!unitsOnBoard.contains(r) || !unitsOnBoard[r].contains(c)) {
-                ClickableTile* highlight = new ClickableTile(
-                    QPixmap("images/place_highlight.png").scaled(96, 96),
-                    r, c
-                );
-                highlight->setPos(c * 96 * 0.75, r * 81 + (c % 2 == 1 ? 81 / 2 : 0));
-                highlight->setZValue(-1);
-                highlight->setIsHighlight(true);
-                scene->addItem(highlight);
             }
         }
     }
@@ -155,11 +210,21 @@ void GameBoard::resetMovementState()
 
 void GameBoard::moveUnitTo(ClickableTile* unit, int newRow, int newCol)
 {
+    // محاسبه موقعیت جدید
+    qreal x = newCol * 96 * 0.75;
+    qreal y = newRow * 81;
+    if (newCol % 2 == 1) y += 81 / 2;
+
+    // به‌روزرسانی موقعیت گرافیکی
+    unit->setPos(x, y);
+    unit->setZValue(1);
+
+    // به‌روزرسانی موقعیت منطقی
     QString unitType = unitsOnBoard[unit->getRow()][unit->getCol()].first;
     unitsOnBoard[newRow][newCol] = std::make_pair(unitType, unit);
     unitsOnBoard[unit->getRow()].remove(unit->getCol());
 
-    unit->setPos(newCol * 96 * 0.75, newRow * 81 + (newCol % 2 == 1 ? 81 / 2 : 0));
+    // به‌روزرسانی مختصات داخلی
     unit->setRow(newRow);
     unit->setCol(newCol);
 }
@@ -172,7 +237,7 @@ bool GameBoard::isOwnUnit(ClickableTile* unit)
            (currentPlayer == Player2 && unitType.startsWith("P2"));
 }
 
-bool GameBoard::isValidPosition(int row, int col)
+bool GameBoard::isValidPosition(int row, int col) const
 {
     return row >= 0 && row < 5 && col >= 0 && col < 9;
 }
@@ -233,8 +298,8 @@ GameBoard::GameBoard(QWidget *parent)
     const int cols = 9;
     char data1[5][5];
     char data2[4][4];
-    char data[11][11];
-
+    // char data[11][11];
+    memset(data, 0, sizeof(data));
     std::cout << "asdasd" << std::endl;
 
     std::string myText;

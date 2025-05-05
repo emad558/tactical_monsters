@@ -1,43 +1,62 @@
 #include "mainwindow.h"
 #include <QPixmap>
 #include <QVBoxLayout>
-#include <QWidget>
+#include <QPushButton>
 #include "gameboard.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    // Central widget to hold everything
-    QWidget *central = new QWidget(this);
-    this->setCentralWidget(central);
+    setFixedSize(1024, 768);
 
-    // Background image
-    backgroundLabel = new QLabel(central);
-    backgroundLabel->setPixmap(QPixmap("image/bg.png").scaled(this->size(), Qt::KeepAspectRatioByExpanding));
-    backgroundLabel->setScaledContents(true);
-    backgroundLabel->lower();  // Push it to the back
+    QWidget *centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
 
-    // Two buttons
-    button1 = new QPushButton("Button 1", central);
-    button2 = new QPushButton("Button 2", central);
+    backgroundLabel = new QLabel(centralWidget);
+    backgroundLabel->setAlignment(Qt::AlignCenter);
 
-    button1->setStyleSheet("font-size: 18px; padding: 10px;");
-    button2->setStyleSheet("font-size: 18px; padding: 10px;");
+    QPixmap bg("image/bg.jpg");
+    if(bg.isNull()) {
+        qDebug() << "Failed to load background image!";
+    }
+    backgroundLabel->setPixmap(bg);
+    backgroundLabel->lower();
 
-    // Layout for buttons
-    QVBoxLayout *layout = new QVBoxLayout();
+    QPushButton *button1 = new QPushButton("New Game", centralWidget);
+    QPushButton *button2 = new QPushButton("Gallery", centralWidget);
+
+    button1->setStyleSheet("font-size: 18px; padding: 10px; min-width: 200px;");
+    button2->setStyleSheet("font-size: 18px; padding: 10px; min-width: 200px;");
+
+    QVBoxLayout *layout = new QVBoxLayout(centralWidget);
     layout->addStretch();
     layout->addWidget(button1, 0, Qt::AlignCenter);
     layout->addWidget(button2, 0, Qt::AlignCenter);
     layout->addStretch();
 
-
-    connect(button1,&QPushButton::clicked , this,[this](){
-        GameBoard* board = new GameBoard();
+    connect(button1, &QPushButton::clicked, this, [this](){
+        GameBoard *board = new GameBoard();
         board->show();
-        this->hide();
-
-
+        hide();
     });
-    central->setLayout(layout);
+
+    updateBackground();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    updateBackground();
+}
+
+void MainWindow::updateBackground()
+{
+    if (backgroundLabel) {
+        QPixmap original("image/bg.jpg");
+        if (!original.isNull()) {
+            QPixmap scaled = original.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+            backgroundLabel->setPixmap(scaled);
+            backgroundLabel->resize(size());
+        }
+    }
 }

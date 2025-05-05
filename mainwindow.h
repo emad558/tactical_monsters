@@ -1,20 +1,16 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
-#include <QMainWindow>
-#include <QPushButton>
 #include <QLabel>
+#include <QMainWindow>
 
-class MainWindow : public QMainWindow {
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
-
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 private:
     QLabel *backgroundLabel;
-    QPushButton *button1;
-    QPushButton *button2;
+    void updateBackground();
 };
-
-#endif // MAINWINDOW_H

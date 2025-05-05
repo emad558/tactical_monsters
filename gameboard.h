@@ -21,6 +21,7 @@ private slots:
     void onTileClicked(int row, int col);
 
 private:
+    char data[11][11];
     void handleUnitPlacement(int row, int col);
     void handleUnitSelection(QList<QGraphicsItem*> items, int row, int col);
     void handleUnitMovement(QList<QGraphicsItem*> items, int row, int col);
@@ -30,7 +31,7 @@ private:
     void resetMovementState();
     void moveUnitTo(ClickableTile* unit, int newRow, int newCol);
     bool isOwnUnit(ClickableTile* unit);
-    bool isValidPosition(int row, int col);
+    bool isValidPosition(int row, int col) const;
     bool isMovementAllowed(int row, int col);
     void switchTurns();
     void updateTurnIndicator();
