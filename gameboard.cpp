@@ -25,7 +25,7 @@ void GameBoard::onTileClicked(int row, int col)
         handleUnitSelection(items, row, col);
         break;
     case SelectingDestination:
-        // فقط اگر واقعاً در حالت انتخاب مقصد هستیم حرکت را انجام بده
+
         if (selectedUnitTile != nullptr) {
             handleUnitMovement(items, row, col);
         }
@@ -40,7 +40,7 @@ void GameBoard::handleUnitPlacement(int row, int col)
     char tileData = (col % 2 == 0) ? data[dataRow*2 + 1][dataCol*2 + 1]
                                    : data[dataRow*2 + 2][dataCol*2 + 2];
 
-    // بررسی مالکیت خانه
+
     bool isOwned = (currentPlayer == Player1 && tileData == '1') ||
                    (currentPlayer == Player2 && tileData == '2');
 
@@ -78,13 +78,12 @@ void GameBoard::highlightPlacementTiles()
 
     for (int r = 0; r < 5; r++) {
         for (int c = 0; c < 9; c++) {
-            // تبدیل موقعیت به اندیس‌های data
+
             int dataRow = r;
             int dataCol = c / 2;
             char tileData = (c % 2 == 0) ? data[dataRow*2 + 1][dataCol*2 + 1]
                                          : data[dataRow*2 + 2][dataCol*2 + 2];
 
-            // بررسی مالکیت
             bool isOwned = (currentPlayer == Player1 && tileData == '1') ||
                            (currentPlayer == Player2 && tileData == '2');
 
@@ -113,12 +112,10 @@ void GameBoard::handleUnitSelection(QList<QGraphicsItem*> items, int row, int co
             highlightMovementTiles(row, col, 2);
             qDebug() << "Selected unit at:" << row << col;
 
-            // اضافه کردن این خط برای جلوگیری از حرکت فوری
-            return; // این return جدید اضافه شده
+            return;
         }
     }
 
-    // بقیه کد برای حالتی که می‌خواهید واحد جدید قرار دهید
     if (isUnitSelected && currentState == PlacingUnit) {
         handleUnitPlacement(row, col);
     }
@@ -148,7 +145,6 @@ void GameBoard::handleUnitMovement(QList<QGraphicsItem*> items, int row, int col
         return;
     }
 
-    // انجام حرکت
     moveUnitTo(selectedUnitTile, row, col);
     resetMovementState();
     switchTurns();
@@ -161,7 +157,7 @@ void GameBoard::highlightMovementTiles(int startRow, int startCol, int range)
 
     for (int r = -range; r <= range; r++) {
         for (int c = -range; c <= range; c++) {
-            if (abs(r + c) <= range) { // الگوی حرکت شش‌ضلعی
+            if (abs(r + c) <= range) {
                 int newRow = startRow + r;
                 int newCol = startCol + c;
 
@@ -169,7 +165,6 @@ void GameBoard::highlightMovementTiles(int startRow, int startCol, int range)
                     (!unitsOnBoard.contains(newRow) || !unitsOnBoard[newRow].contains(newCol))) {
 
 
-                    // محاسبه موقعیت دقیق برای هایلایت
                     qreal x = newCol * 96 * 0.75;
                     qreal y = newRow * 81;
                     if (newCol % 2 == 1) y += 81 / 2;
@@ -210,21 +205,20 @@ void GameBoard::resetMovementState()
 
 void GameBoard::moveUnitTo(ClickableTile* unit, int newRow, int newCol)
 {
-    // محاسبه موقعیت جدید
+
     qreal x = newCol * 96 * 0.75;
     qreal y = newRow * 81;
     if (newCol % 2 == 1) y += 81 / 2;
 
-    // به‌روزرسانی موقعیت گرافیکی
+
     unit->setPos(x, y);
     unit->setZValue(1);
 
-    // به‌روزرسانی موقعیت منطقی
+
     QString unitType = unitsOnBoard[unit->getRow()][unit->getCol()].first;
     unitsOnBoard[newRow][newCol] = std::make_pair(unitType, unit);
     unitsOnBoard[unit->getRow()].remove(unit->getCol());
 
-    // به‌روزرسانی مختصات داخلی
     unit->setRow(newRow);
     unit->setCol(newCol);
 }
@@ -264,7 +258,7 @@ void GameBoard::switchTurns()
 
 void GameBoard::updateTurnIndicator()
 {
-    // Implement your turn indicator UI update here
+
 }
 
 GameBoard::GameBoard(QWidget *parent)

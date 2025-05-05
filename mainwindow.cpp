@@ -3,6 +3,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include "gameboard.h"
+#include "gallerywindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -38,6 +39,12 @@ MainWindow::MainWindow(QWidget *parent)
         GameBoard *board = new GameBoard();
         board->show();
         hide();
+    });
+
+    connect(button2, &QPushButton::clicked, this, [this]() {
+        GalleryWindow *gallery = new GalleryWindow(this);
+        gallery->show();
+        this->hide();
     });
 
     updateBackground();

@@ -31,6 +31,7 @@ add_executable(tactical_monsters
     mainwindow.h
     gameboard.h gameboard.cpp
     clickabletile.h clickabletile.cpp
+    gallerywindow.h gallerywindow.cpp
 )
 
 target_link_libraries(tactical_monsters Qt6::Core Qt6::Gui Qt6::Widgets)
